@@ -30,7 +30,4 @@ print(f"\n{len(good_proxies)} of {len(proxies)} proxies work")
 with open(f"good_proxies.txt", "w+") as file:
     file.write("\n".join(good_proxies))
 
-
-
-
-
+input()
