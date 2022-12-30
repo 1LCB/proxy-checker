@@ -1,33 +1,47 @@
-import concurrent.futures
+from threading import Thread
+import time
 import requests
+
+MAX_THREADS = 5
+WORKING_THREADS = 0
 
 good_proxies = []
 
-proxies_from_txt = open("proxies.txt", 'r')
-proxies = list(map(lambda x: x.replace("\n", ""), proxies_from_txt))
+with open('proxies.txt', 'r') as file:
+    proxies = file.read().split('\n')
+
 
 def check_proxy(proxy: str):
+    global good_proxies, WORKING_THREADS
     try:
-        global good_proxies
-        url = 'https://ipinfo.io/json'
+        WORKING_THREADS += 1
+        url = 'https://ipinfo.io/json'  # https://ipinfo.io/json https://www.myip.com
 
         proxy_dict = {
             "http": proxy,
             "https": proxy,
         }
-        response = requests.get(url, proxies=proxy_dict, timeout=2.5)
-        print(f"{proxy} Works!")
+        print(f"checking {proxy}...")
+        response = requests.get(url, proxies=proxy_dict, timeout=15)
+        print(f"{proxy} Works!\n")
+        # print(response.text)
 
         good_proxies.append(proxy)
-    except:
-        pass
 
-with concurrent.futures.ThreadPoolExecutor() as executor:
-    executor.map(check_proxy, proxies)
+        WORKING_THREADS -= 1
+    except:
+        WORKING_THREADS -= 1
+
+
+for proxy in proxies:
+    while WORKING_THREADS == MAX_THREADS:
+        time.sleep(0.5)
+    t = Thread(target=check_proxy, args=(proxy,))
+    t.start()
 
 print(f"\n{len(good_proxies)} of {len(proxies)} proxies work")
 
 with open(f"good_proxies.txt", "w+") as file:
     file.write("\n".join(good_proxies))
 
-input()
+input("Press enter to exit")
